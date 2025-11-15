@@ -1,0 +1,451 @@
+<!-- Conway's Game of Life - Optimized for Ghost CMS Code Injection -->
+<!--
+  USAGE:
+  1. Copy this entire file content
+  2. In Ghost Admin, go to your post/page editor
+  3. Add an HTML card or use the code injection feature
+  4. Paste this code
+  5. Publish!
+-->
+
+<div id="conway-game-container">
+  <div class="conway-wrapper">
+    <h2 class="conway-title">Conway's Game of Life</h2>
+    <p class="conway-subtitle">Click cells to toggle, or try a random pattern!</p>
+
+    <div class="conway-canvas-container">
+      <canvas id="conway-canvas"></canvas>
+    </div>
+
+    <div class="conway-controls">
+      <button class="conway-btn conway-btn-primary" id="conway-play-pause">▶️ Play</button>
+      <button class="conway-btn conway-btn-primary" id="conway-step">⏭️ Step</button>
+      <button class="conway-btn conway-btn-secondary" id="conway-clear">🗑️ Clear</button>
+      <button class="conway-btn conway-btn-secondary" id="conway-random">🎲 Random</button>
+
+      <div class="conway-slider-container">
+        <label for="conway-speed">Speed:</label>
+        <input type="range" id="conway-speed" min="1" max="60" value="10">
+        <span id="conway-speed-value">10</span>
+      </div>
+    </div>
+
+    <div class="conway-stats">
+      Generation: <span id="conway-generation">0</span> |
+      Live Cells: <span id="conway-live-cells">0</span> |
+      <span id="conway-status">Paused</span>
+    </div>
+
+    <div class="conway-info">
+      <strong>How to play:</strong> Click cells to toggle them on/off, or click "Random" for a random pattern.
+      Press "Play" to watch evolution!<br>
+      <strong>Rules:</strong> Live cells with 2-3 neighbors survive. Dead cells with exactly 3 neighbors become alive.
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Scoped styles for Conway's Game of Life - won't conflict with Ghost theme */
+  #conway-game-container {
+    margin: 2rem auto;
+    max-width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+
+  .conway-wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .conway-title {
+    text-align: center;
+    color: #667eea;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  .conway-subtitle {
+    text-align: center;
+    color: #6b7280;
+    margin: 0 0 1.5rem 0;
+    font-size: 0.875rem;
+  }
+
+  .conway-canvas-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+  }
+
+  #conway-canvas {
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    max-width: 100%;
+    height: auto;
+  }
+
+  .conway-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .conway-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+
+  .conway-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+
+  .conway-btn:active {
+    transform: translateY(0);
+  }
+
+  .conway-btn-secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
+  }
+
+  .conway-btn-secondary:hover {
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+  }
+
+  .conway-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f9fafb;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    min-width: 200px;
+  }
+
+  .conway-slider-container label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #667eea;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  #conway-speed {
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: #d1d5db;
+    outline: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  #conway-speed::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.4);
+  }
+
+  #conway-speed::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.4);
+  }
+
+  .conway-stats {
+    text-align: center;
+    color: #4b5563;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+
+  .conway-stats span {
+    font-weight: 700;
+    color: #667eea;
+  }
+
+  .conway-info {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+
+  .conway-info strong {
+    color: #667eea;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .conway-wrapper {
+      padding: 1rem;
+    }
+
+    .conway-title {
+      font-size: 1.5rem;
+    }
+
+    .conway-controls {
+      gap: 0.375rem;
+    }
+
+    .conway-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+    }
+
+    .conway-slider-container {
+      min-width: 180px;
+      padding: 0.375rem 0.75rem;
+    }
+  }
+</style>
+
+<script>
+(function() {
+  'use strict';
+
+  // Configuration
+  const CELL_SIZE = 6;
+  const GRID_WIDTH = 100;
+  const GRID_HEIGHT = 60;
+  const ALIVE_COLOR = '#667eea';
+  const DEAD_COLOR = '#ffffff';
+  const GRID_COLOR = '#f3f4f6';
+
+  // Get elements
+  const canvas = document.getElementById('conway-canvas');
+  const ctx = canvas.getContext('2d');
+  const playPauseBtn = document.getElementById('conway-play-pause');
+  const stepBtn = document.getElementById('conway-step');
+  const clearBtn = document.getElementById('conway-clear');
+  const randomBtn = document.getElementById('conway-random');
+  const speedSlider = document.getElementById('conway-speed');
+  const speedValue = document.getElementById('conway-speed-value');
+  const generationDisplay = document.getElementById('conway-generation');
+  const liveCellsDisplay = document.getElementById('conway-live-cells');
+  const statusText = document.getElementById('conway-status');
+
+  // Set canvas size
+  canvas.width = GRID_WIDTH * CELL_SIZE;
+  canvas.height = GRID_HEIGHT * CELL_SIZE;
+
+  // Game state
+  let grid = createEmptyGrid();
+  let isPlaying = false;
+  let generation = 0;
+  let animationId = null;
+  let lastUpdateTime = 0;
+  let updateInterval = 100;
+
+  function createEmptyGrid() {
+    return Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(false));
+  }
+
+  function drawGrid() {
+    // Clear canvas
+    ctx.fillStyle = DEAD_COLOR;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid lines (lighter for better performance)
+    ctx.strokeStyle = GRID_COLOR;
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i <= GRID_WIDTH; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL_SIZE, 0);
+      ctx.lineTo(i * CELL_SIZE, canvas.height);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i <= GRID_HEIGHT; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, i * CELL_SIZE);
+      ctx.lineTo(canvas.width, i * CELL_SIZE);
+      ctx.stroke();
+    }
+
+    // Draw cells
+    ctx.fillStyle = ALIVE_COLOR;
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      for (let x = 0; x < GRID_WIDTH; x++) {
+        if (grid[y][x]) {
+          ctx.fillRect(
+            x * CELL_SIZE + 1,
+            y * CELL_SIZE + 1,
+            CELL_SIZE - 2,
+            CELL_SIZE - 2
+          );
+        }
+      }
+    }
+
+    updateStats();
+  }
+
+  function countNeighbors(x, y) {
+    let count = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+
+        const newX = x + dx;
+        const newY = y + dy;
+
+        if (newX >= 0 && newX < GRID_WIDTH && newY >= 0 && newY < GRID_HEIGHT) {
+          if (grid[newY][newX]) count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  function nextGeneration() {
+    const newGrid = createEmptyGrid();
+
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      for (let x = 0; x < GRID_WIDTH; x++) {
+        const neighbors = countNeighbors(x, y);
+        const isAlive = grid[y][x];
+
+        if (isAlive) {
+          newGrid[y][x] = neighbors === 2 || neighbors === 3;
+        } else {
+          newGrid[y][x] = neighbors === 3;
+        }
+      }
+    }
+
+    grid = newGrid;
+    generation++;
+  }
+
+  function updateStats() {
+    let liveCount = 0;
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      for (let x = 0; x < GRID_WIDTH; x++) {
+        if (grid[y][x]) liveCount++;
+      }
+    }
+
+    generationDisplay.textContent = generation;
+    liveCellsDisplay.textContent = liveCount;
+    statusText.textContent = isPlaying ? 'Running' : 'Paused';
+  }
+
+  function animate(currentTime) {
+    if (!isPlaying) return;
+
+    if (currentTime - lastUpdateTime >= updateInterval) {
+      nextGeneration();
+      drawGrid();
+      lastUpdateTime = currentTime;
+    }
+
+    animationId = requestAnimationFrame(animate);
+  }
+
+  function togglePlayPause() {
+    isPlaying = !isPlaying;
+
+    if (isPlaying) {
+      playPauseBtn.textContent = '⏸️ Pause';
+      lastUpdateTime = performance.now();
+      animationId = requestAnimationFrame(animate);
+    } else {
+      playPauseBtn.textContent = '▶️ Play';
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    }
+
+    updateStats();
+  }
+
+  function step() {
+    if (isPlaying) return;
+    nextGeneration();
+    drawGrid();
+  }
+
+  function clear() {
+    grid = createEmptyGrid();
+    generation = 0;
+    drawGrid();
+  }
+
+  function randomize() {
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      for (let x = 0; x < GRID_WIDTH; x++) {
+        grid[y][x] = Math.random() < 0.25;
+      }
+    }
+    generation = 0;
+    drawGrid();
+  }
+
+  // Event listeners
+  canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+    const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+    if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT) {
+      grid[y][x] = !grid[y][x];
+      drawGrid();
+    }
+  });
+
+  playPauseBtn.addEventListener('click', togglePlayPause);
+  stepBtn.addEventListener('click', step);
+  clearBtn.addEventListener('click', clear);
+  randomBtn.addEventListener('click', randomize);
+
+  speedSlider.addEventListener('input', function(e) {
+    const speed = parseInt(e.target.value);
+    speedValue.textContent = speed;
+    updateInterval = 1000 / speed;
+  });
+
+  // Initialize
+  randomize();
+  drawGrid();
+})();
+</script>
